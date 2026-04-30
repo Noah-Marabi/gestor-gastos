@@ -25,5 +25,69 @@
 			</div>
 		</div>
 	</div>
+<script>
+  // IMPORTANTE: URL completa para que cargue la librería
+  import { createClient } from 'https://jsdelivr.net'
+
+  // 1. Configuración corregida
+  const supabaseUrl = 'https://yewvuicfqjyzbkericsb.supabase.co'
+  const supabaseKey = 'sb_publishable_9hnbTJXjPw3aS7Dc8f19tA_GCYg1zue'
+  const _supabase = createClient(supabaseUrl, supabaseKey)
+
+  // 2. Elementos del HTML
+  const btn = document.querySelector('button');
+  const inputNombre = document.querySelector('input[type="text"]');
+  const inputMonto = document.querySelector('input[type="number"]');
+  const listaGastos = document.querySelector('.mt-8 div');
+
+  // 3. Función para mostrar los gastos
+  async function cargarGastos() {
+    const { data, error } = await _supabase
+      .from('gastos')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error cargando:", error);
+        return;
+    }
+
+    if (data && data.length > 0) {
+      listaGastos.innerHTML = data.map(g => `
+        <div class="flex justify-between p-2 border-b text-gray-700">
+          <span>${g.descripcion}</span>
+          <span class="font-bold">$${g.monto}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 4. Lógica para GUARDAR
+  btn.addEventListener('click', async () => {
+    const nombre = inputNombre.value;
+    const monto = parseFloat(inputMonto.value);
+
+    if(!nombre || isNaN(monto)) {
+        alert("Por favor, completa los campos correctamente");
+        return;
+    }
+
+    const { error } = await _supabase
+      .from('gastos')
+      .insert([{ descripcion: nombre, monto: monto }]);
+
+    if (error) {
+      alert('Error al guardar: ' + error.message);
+    } else {
+      inputNombre.value = '';
+      inputMonto.value = '';
+      cargarGastos(); 
+    }
+  });
+
+  cargarGastos();
+</script>
+
+
 </body>
 </html>
