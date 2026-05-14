@@ -1,0 +1,565 @@
+---
+// src/pages/index.astro
+// Página principal de la app de gastos
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis Gastos</title>
+
+  <!-- Tailwind CSS via CDN (sin instalar nada) -->
+  <link href="https://unpkg.com/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Google Fonts: Sora (display) + DM Mono (números) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ── Variables y base ── */
+    :root {
+      --bg: #0f0f13;
+      --surface: #18181f;
+      --border: #2a2a35;
+      --accent: #7c6aff;
+      --accent-light: #a99cff;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --danger: #ff5e6d;
+
+      --cat-comida: #f59e0b;
+      --cat-transporte: #3b82f6;
+      --cat-ocio: #10b981;
+      --cat-otros: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Fondo con ruido sutil */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124,106,255,.18), transparent),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+    }
+
+    .input-field {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: .875rem;
+      padding: .65rem 1rem;
+      width: 100%;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,106,255,.18);
+    }
+    .input-field::placeholder { color: var(--muted); }
+
+    select.input-field option { background: #18181f; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Sora', sans-serif;
+      font-weight: 600;
+      font-size: .875rem;
+      letter-spacing: .02em;
+      padding: .7rem 1.5rem;
+      border-radius: .75rem;
+      border: none;
+      cursor: pointer;
+      transition: background .2s, transform .1s, box-shadow .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      box-shadow: 0 4px 20px rgba(124,106,255,.3);
+    }
+    .btn-primary:hover {
+      background: #6b5ae8;
+      box-shadow: 0 4px 28px rgba(124,106,255,.5);
+    }
+    .btn-primary:active { transform: scale(.97); }
+    .btn-primary:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Badge de categoría */
+    .badge {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+    }
+    .badge-comida     { background: rgba(245,158,11,.15); color: var(--cat-comida); }
+    .badge-transporte { background: rgba(59,130,246,.15); color: var(--cat-transporte); }
+    .badge-ocio       { background: rgba(16,185,129,.15); color: var(--cat-ocio); }
+    .badge-otros      { background: rgba(139,92,246,.15); color: var(--cat-otros); }
+
+    /* Ítem de gasto */
+    .gasto-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: .85rem 1rem;
+      border-radius: .75rem;
+      border: 1px solid transparent;
+      transition: background .15s, border-color .15s;
+    }
+    .gasto-item:hover {
+      background: rgba(255,255,255,.03);
+      border-color: var(--border);
+    }
+
+    /* Número de monto */
+    .amount {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      color: var(--accent-light);
+    }
+
+    /* Total */
+    .total-amount {
+      font-family: 'DM Mono', monospace;
+      font-size: 2.25rem;
+      font-weight: 500;
+      color: var(--accent-light);
+      letter-spacing: -.02em;
+    }
+
+    /* Toast de error */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: rgba(255,94,109,.15);
+      border: 1px solid var(--danger);
+      color: #ffb3ba;
+      border-radius: .75rem;
+      padding: .75rem 1.25rem;
+      font-size: .8rem;
+      font-weight: 500;
+      z-index: 9999;
+      transform: translateY(5rem);
+      opacity: 0;
+      transition: transform .3s, opacity .3s;
+      max-width: 20rem;
+    }
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: inline-block;
+    }
+
+    /* Animación de entrada para items */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn .25s ease forwards; }
+
+    /* Scrollbar custom */
+    #lista-gastos::-webkit-scrollbar { width: 4px; }
+    #lista-gastos::-webkit-scrollbar-track { background: transparent; }
+    #lista-gastos::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body class="relative z-10">
+
+  <!-- ────────── LAYOUT ────────── -->
+  <div class="min-h-screen flex flex-col items-center py-12 px-4">
+
+    <!-- Header -->
+    <div class="w-full max-w-xl mb-8 text-center">
+      <div class="inline-flex items-center gap-2 mb-3 text-xs font-semibold tracking-widest uppercase"
+           style="color: var(--accent-light)">
+        <span>💸</span> Control de Finanzas
+      </div>
+      <h1 class="text-4xl font-bold tracking-tight" style="color: var(--text)">
+        Mis Gastos
+      </h1>
+      <p class="mt-2 text-sm" style="color: var(--muted)">
+        Registrá y seguí tus gastos personales
+      </p>
+    </div>
+
+    <!-- ── TOTAL ── -->
+    <div class="card w-full max-w-xl p-6 mb-5 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color: var(--muted)">
+          Total gastado
+        </p>
+        <p class="total-amount" id="total-display">$ 0,00</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+           style="background: rgba(124,106,255,.12);">
+        📊
+      </div>
+    </div>
+
+    <!-- ── FORMULARIO ── -->
+    <div class="card w-full max-w-xl p-6 mb-5">
+      <h2 class="text-base font-semibold mb-5" style="color: var(--text)">
+        Agregar gasto
+      </h2>
+
+      <div class="flex flex-col gap-3">
+
+        <!-- Descripción -->
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 tracking-wide uppercase"
+                 style="color: var(--muted)">Descripción</label>
+          <input
+            type="text"
+            id="descripcion"
+            class="input-field"
+            placeholder="Ej: Almuerzo en el trabajo"
+            maxlength="120"
+          />
+        </div>
+
+        <!-- Monto + Categoría en fila -->
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label class="block text-xs font-semibold mb-1.5 tracking-wide uppercase"
+                   style="color: var(--muted)">Monto ($)</label>
+            <input
+              type="number"
+              id="monto"
+              class="input-field"
+              placeholder="0.00"
+              min="0.01"
+              step="0.01"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs font-semibold mb-1.5 tracking-wide uppercase"
+                   style="color: var(--muted)">Categoría</label>
+            <select id="categoria" class="input-field">
+              <option value="">Elegir...</option>
+              <option value="comida">🍔 Comida</option>
+              <option value="transporte">🚌 Transporte</option>
+              <option value="ocio">🎮 Ocio</option>
+              <option value="otros">📦 Otros</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Botón -->
+        <button id="btn-agregar" class="btn-primary mt-1 w-full justify-center">
+          <span>＋</span> Agregar gasto
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ── LISTA DE GASTOS ── -->
+    <div class="card w-full max-w-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-semibold" style="color: var(--text)">Historial</h2>
+        <span id="contador-gastos"
+              class="text-xs font-semibold px-2.5 py-1 rounded-full"
+              style="background: rgba(124,106,255,.12); color: var(--accent-light)">
+          0 gastos
+        </span>
+      </div>
+
+      <!-- Estado de carga -->
+      <div id="loading-state" class="flex items-center justify-center gap-3 py-8"
+           style="color: var(--muted)">
+        <span class="spinner"></span>
+        <span class="text-sm">Cargando gastos...</span>
+      </div>
+
+      <!-- Estado vacío -->
+      <div id="empty-state" class="hidden text-center py-10" style="color: var(--muted)">
+        <div class="text-4xl mb-3">💭</div>
+        <p class="text-sm">No hay gastos registrados todavía.</p>
+        <p class="text-xs mt-1">¡Agregá el primero!</p>
+      </div>
+
+      <!-- Lista scrolleable -->
+      <div id="lista-gastos" class="flex flex-col gap-1 max-h-96 overflow-y-auto pr-1">
+        <!-- Los ítems se insertan acá por JS -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="mt-8 text-xs" style="color: var(--muted)">
+      Conectado a Supabase · datos en la nube 🔒
+    </p>
+
+  </div>
+
+  <!-- Toast de errores -->
+  <div id="toast"></div>
+
+  <!-- ────────── SCRIPT PRINCIPAL ────────── -->
+  <script type="module">
+    // ─── Importar el módulo de Supabase ───
+    // Si estás en Astro, usá la ruta relativa correcta:
+    import { supabase } from '/src/lib/supabase.js';
+    // ─── Referencias al DOM ───
+    const btnAgregar      = document.getElementById('btn-agregar');
+    const inputDesc       = document.getElementById('descripcion');
+    const inputMonto      = document.getElementById('monto');
+    const selectCat       = document.getElementById('categoria');
+    const listaGastos     = document.getElementById('lista-gastos');
+    const totalDisplay    = document.getElementById('total-display');
+    const contadorGastos  = document.getElementById('contador-gastos');
+    const loadingState    = document.getElementById('loading-state');
+    const emptyState      = document.getElementById('empty-state');
+    const toast           = document.getElementById('toast');
+
+    // ─── Utilidades ───
+    let toastTimer;
+
+    function showToast(msg) {
+      toast.textContent = '⚠️ ' + msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    function formatMonto(n) {
+      return '$ ' + Number(n).toLocaleString('es-AR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function formatFecha(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    }
+
+    const EMOJIS = {
+      comida: '🍔', transporte: '🚌', ocio: '🎮', otros: '📦',
+    };
+
+    // ─── Renderizar lista de gastos ───
+    function renderGastos(gastos) {
+      loadingState.classList.add('hidden');
+
+      // Actualizar total
+      const total = gastos.reduce((acc, g) => acc + Number(g.monto), 0);
+      totalDisplay.textContent = formatMonto(total);
+
+      // Actualizar contador
+      const n = gastos.length;
+      contadorGastos.textContent = `${n} gasto${n !== 1 ? 's' : ''}`;
+
+      // Limpiar lista
+      listaGastos.innerHTML = '';
+
+      if (gastos.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      gastos.forEach((g, i) => {
+        const item = document.createElement('div');
+        item.className = 'gasto-item fade-in';
+        item.style.animationDelay = `${i * 30}ms`;
+        item.innerHTML = `
+          <!-- Icono categoría -->
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+               style="background: rgba(255,255,255,.05)">
+            ${EMOJIS[g.categoria] || '📦'}
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold truncate" style="color: var(--text)">
+              ${escapeHtml(g.descripcion)}
+            </p>
+            <p class="text-xs mt-0.5" style="color: var(--muted)">
+              ${formatFecha(g.created_at)}
+            </p>
+          </div>
+
+          <!-- Badge categoría -->
+          <span class="badge badge-${g.categoria} flex-shrink-0 hidden sm:inline">
+            ${g.categoria}
+          </span>
+
+          <!-- Monto -->
+          <span class="amount text-sm flex-shrink-0">
+            ${formatMonto(g.monto)}
+          </span>
+
+          <!-- Botón eliminar -->
+          <button
+            class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs
+                   transition-colors hover:bg-red-500/20"
+            style="color: var(--muted)"
+            data-id="${g.id}"
+            title="Eliminar gasto"
+          >✕</button>
+        `;
+
+        // Evento eliminar
+        item.querySelector('button[data-id]').addEventListener('click', () => {
+          handleDelete(g.id, item);
+        });
+
+        listaGastos.appendChild(item);
+      });
+    }
+
+    // ─── Escape HTML para prevenir XSS ───
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ─── Cargar gastos desde Supabase ───
+    async function loadGastos() {
+      loadingState.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+      listaGastos.innerHTML = '';
+
+      try {
+        const gastos = await supabase.getGastos();
+        renderGastos(gastos);
+      } catch (err) {
+        console.error('Error cargando gastos:', err);
+        loadingState.classList.add('hidden');
+        showToast('No se pudieron cargar los gastos. Revisá la conexión con Supabase.');
+      }
+    }
+
+    // ─── Agregar gasto ───
+    async function handleAgregar() {
+      const descripcion = inputDesc.value.trim();
+      const monto       = parseFloat(inputMonto.value);
+      const categoria   = selectCat.value;
+
+      // ── Validaciones ──
+      if (!descripcion) {
+        showToast('La descripción no puede estar vacía.');
+        inputDesc.focus();
+        return;
+      }
+      if (!monto || monto <= 0 || isNaN(monto)) {
+        showToast('Ingresá un monto válido mayor a 0.');
+        inputMonto.focus();
+        return;
+      }
+      if (!categoria) {
+        showToast('Elegí una categoría.');
+        selectCat.focus();
+        return;
+      }
+
+      // ── Deshabilitar botón mientras guarda ──
+      btnAgregar.disabled = true;
+      btnAgregar.innerHTML = '<span class="spinner"></span> Guardando...';
+
+      try {
+        await supabase.addGasto({ descripcion, monto, categoria });
+
+        // Limpiar formulario
+        inputDesc.value  = '';
+        inputMonto.value = '';
+        selectCat.value  = '';
+
+        // Recargar lista (actualiza total automáticamente)
+        await loadGastos();
+
+      } catch (err) {
+        console.error('Error al guardar gasto:', err);
+        showToast('No se pudo guardar el gasto. Revisá la consola.');
+      } finally {
+        btnAgregar.disabled = false;
+        btnAgregar.innerHTML = '<span>＋</span> Agregar gasto';
+      }
+    }
+
+    // ─── Eliminar gasto ───
+    async function handleDelete(id, itemEl) {
+      // Animación de salida
+      itemEl.style.transition = 'opacity .2s, transform .2s';
+      itemEl.style.opacity    = '0';
+      itemEl.style.transform  = 'translateX(10px)';
+
+      try {
+        await supabase.deleteGasto(id);
+        await loadGastos(); // recarga y actualiza total
+      } catch (err) {
+        console.error('Error al eliminar gasto:', err);
+        itemEl.style.opacity   = '1';
+        itemEl.style.transform = 'none';
+        showToast('No se pudo eliminar el gasto.');
+      }
+    }
+
+    // ─── Eventos ───
+    btnAgregar.addEventListener('click', handleAgregar);
+
+    // Enter en cualquier campo dispara el guardado
+    [inputDesc, inputMonto, selectCat].forEach(el => {
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleAgregar();
+      });
+    });
+
+    // ─── Cargar gastos al iniciar la página ───
+    loadGastos();
+  </script>
+
+</body>
+</html>

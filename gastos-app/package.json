@@ -1,0 +1,13 @@
+{
+  "name": "gastos-app",
+  "version": "1.0.0",
+  "description": "App de gestión de gastos personales con Supabase",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.0.0"
+  }
+}
