@@ -341,9 +341,125 @@
 
   <!-- ────────── SCRIPT PRINCIPAL ────────── -->
   <script type="module">
-    // ─── Importar el módulo de Supabase ───
-    // Si estás en Astro, usá la ruta relativa correcta:
-    import { supabase } from '/src/lib/supabase.js';
+    // ─── Configuración de Supabase (inline) + localStorage fallback ───
+    const SUPABASE_URL = "https://yewvuicfqjyzbkericsb.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_9hnbTJXjPw3aS7Dc8f19tA_GCYg1zue";
+    const USE_LOCAL_STORAGE = true; // Cambiar a false si quieres solo Supabase
+
+    // ─── Helpers para localStorage ───
+    function getLocalGastos() {
+      try {
+        const data = localStorage.getItem('gastos');
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        console.warn('No se pudo leer localStorage:', e);
+        return [];
+      }
+    }
+
+    function saveLocalGastos(gastos) {
+      try {
+        localStorage.setItem('gastos', JSON.stringify(gastos));
+      } catch (e) {
+        console.warn('No se pudo guardar en localStorage:', e);
+      }
+    }
+
+    function generateId() {
+      return Math.random().toString(36).substr(2, 9);
+    }
+
+    const supabase = {
+      url: SUPABASE_URL,
+      key: SUPABASE_ANON_KEY,
+
+      get headers() {
+        return {
+          "Content-Type": "application/json",
+          "apikey": this.key,
+          "Authorization": `Bearer ${this.key}`,
+        };
+      },
+
+      async getGastos() {
+        if (USE_LOCAL_STORAGE) {
+          console.log('📱 Usando almacenamiento local');
+          return getLocalGastos().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        const res = await fetch(
+          `${this.url}/rest/v1/gastos?order=created_at.desc&select=*`,
+          { headers: this.headers }
+        );
+
+        if (!res.ok) {
+          const err = await res.json();
+          console.error("❌ Error al obtener gastos:", err);
+          throw new Error(err.message || "Error al obtener gastos");
+        }
+
+        return await res.json();
+      },
+
+      async addGasto({ descripcion, monto, categoria }) {
+        if (USE_LOCAL_STORAGE) {
+          const gastos = getLocalGastos();
+          const nuevoGasto = {
+            id: generateId(),
+            descripcion,
+            monto: parseFloat(monto),
+            categoria,
+            created_at: new Date().toISOString(),
+          };
+          gastos.push(nuevoGasto);
+          saveLocalGastos(gastos);
+          console.log('✅ Gasto guardado localmente');
+          return nuevoGasto;
+        }
+
+        const res = await fetch(`${this.url}/rest/v1/gastos`, {
+          method: "POST",
+          headers: {
+            ...this.headers,
+            "Prefer": "return=representation",
+          },
+          body: JSON.stringify({ descripcion, monto, categoria }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          console.error("❌ Error al guardar gasto:", err);
+          throw new Error(err.message || "Error al guardar el gasto");
+        }
+
+        const data = await res.json();
+        return data[0];
+      },
+
+      async deleteGasto(id) {
+        if (USE_LOCAL_STORAGE) {
+          let gastos = getLocalGastos();
+          gastos = gastos.filter(g => g.id !== id);
+          saveLocalGastos(gastos);
+          console.log('✅ Gasto eliminado localmente');
+          return true;
+        }
+
+        const res = await fetch(`${this.url}/rest/v1/gastos?id=eq.${id}`, {
+          method: "DELETE",
+          headers: this.headers,
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          console.error("❌ Error al eliminar gasto:", err);
+          throw new Error(err.message || "Error al eliminar el gasto");
+        }
+
+        return true;
+      },
+    };
+
     // ─── Referencias al DOM ───
     const btnAgregar      = document.getElementById('btn-agregar');
     const inputDesc       = document.getElementById('descripcion');
