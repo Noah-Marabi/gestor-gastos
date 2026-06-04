@@ -10,7 +10,8 @@ Stack: **HTML + TailwindCSS + JavaScript** dentro de **Astro**, con **Supabase**
 gastos-app/
 ├── src/
 │   ├── lib/
-│   │   └── supabase.js       ← Módulo de conexión con Supabase
+│   │   └── supabase.js       ← Cliente de Supabase (SDK oficial)
+├── .env                      ← Variables de entorno (No subir a Git)
 │   └── pages/
 │       └── index.astro       ← Página principal (HTML + JS)
 ├── astro.config.mjs
@@ -54,16 +55,10 @@ gastos-app/
 
 ### 4. Pegar las credenciales en el código
 
-Abrí el archivo `src/lib/supabase.js` y reemplazá las dos líneas al principio:
-
-```js
-// ANTES (placeholder):
-const SUPABASE_URL = "https://TU_PROJECT_ID.supabase.co";
-const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI";
-
-// DESPUÉS (con tus datos reales):
-const SUPABASE_URL = "https://xyzxyzxyz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
+Crea un archivo llamado `.env` en la raíz de la carpeta `gastos-app` con el siguiente contenido:
+```env
+PUBLIC_SUPABASE_URL=tu_url_aqui
+PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_aqui
 ```
 
 > ⚠️ **No commitees las claves reales a un repositorio público.**
