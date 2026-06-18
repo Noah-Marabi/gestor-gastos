@@ -125,10 +125,6 @@ Podés subir la carpeta `/dist/` a **Netlify**, **Vercel**, o cualquier hosting 
 → Abrí DevTools → Console y fijate si hay errores. También revisá DevTools → Network para ver las respuestas de la API.
 
 
-# Gestor de Gastos
-
-Aplicación para gestionar gastos personales utilizando Astro y Supabase.
-
 ## Integrantes
 - Noah Marabi
 - Magali L
