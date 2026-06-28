@@ -149,9 +149,7 @@ En cada `push` o `pull request` se ejecuta automáticamente:
 
 URL de producción:
 
-https://TU-PROYECTO.vercel.app
-
-(Reemplazar por la URL real de Vercel).
+https://gestor-gastos-beige.vercel.app
 
 ---
 
