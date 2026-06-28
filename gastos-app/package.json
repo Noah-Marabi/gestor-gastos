@@ -5,10 +5,22 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "test": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "astro": "^4.0.0",
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "astro": "^4.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "vitest": "^4.1.9"
+  },
+  "vitest": {
+    "exclude": [
+      "e2e/**",
+      "node_modules/**"
+    ]
   }
 }
