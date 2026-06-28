@@ -118,3 +118,44 @@ Podés subir la carpeta `/dist/` a **Netlify**, **Vercel**, o cualquier hosting 
 
 **Los gastos no aparecen**
 → Abrí DevTools → Console y fijate si hay errores. También revisá DevTools → Network para ver las respuestas de la API.
+
+---
+
+# 🧪 Calidad del código
+
+Para verificar la calidad del proyecto:
+
+```bash
+npm run lint
+npm run test
+npm run test:e2e
+```
+
+---
+
+# 🚀 Integración Continua
+
+Este proyecto utiliza **GitHub Actions**.
+
+En cada `push` o `pull request` se ejecuta automáticamente:
+
+- ESLint
+- Tests unitarios (Vitest)
+- Build del proyecto
+
+---
+
+# 🌐 Producción
+
+URL de producción:
+
+https://TU-PROYECTO.vercel.app
+
+(Reemplazar por la URL real de Vercel).
+
+---
+
+# 🌳 Convención de ramas
+
+- `main`: rama principal.
+- `rama-noah`: rama de desarrollo utilizada para este TP.
