@@ -340,6 +340,9 @@
   <div id="toast"></div>
 
   <!-- ────────── SCRIPT PRINCIPAL ────────── -->
+// Configuración de la conexión con Supabase.
+// Si USE_LOCAL_STORAGE es true, la aplicación guarda los datos
+// en el navegador para poder probarla sin conexión a la base.
   <script type="module">
     // ─── Configuración de Supabase (inline) + localStorage fallback ───
     const SUPABASE_URL = "https://yewvuicfqjyzbkericsb.supabase.co";
@@ -347,6 +350,7 @@
     const USE_LOCAL_STORAGE = true; // Cambiar a false si quieres solo Supabase
 
     // ─── Helpers para localStorage ───
+    // Obtiene los gastos almacenados en el navegador.
     function getLocalGastos() {
       try {
         const data = localStorage.getItem('gastos');
@@ -356,7 +360,7 @@
         return [];
       }
     }
-
+// Guarda la lista de gastos en localStorage.
     function saveLocalGastos(gastos) {
       try {
         localStorage.setItem('gastos', JSON.stringify(gastos));
@@ -364,11 +368,12 @@
         console.warn('No se pudo guardar en localStorage:', e);
       }
     }
-
+// Genera un identificador único para cada gasto cuando se usa localStorage.
     function generateId() {
       return Math.random().toString(36).substr(2, 9);
     }
-
+// Objeto que centraliza todas las operaciones sobre los datos.
+// Permite obtener, agregar y eliminar gastos.
     const supabase = {
       url: SUPABASE_URL,
       key: SUPABASE_ANON_KEY,
@@ -380,7 +385,7 @@
           "Authorization": `Bearer ${this.key}`,
         };
       },
-
+// Recupera todos los gastos ordenados por fecha.
       async getGastos() {
         if (USE_LOCAL_STORAGE) {
           console.log('📱 Usando almacenamiento local');
@@ -400,6 +405,8 @@
 
         return await res.json();
       },
+
+// Agrega un nuevo gasto a la base de datos o al almacenamiento local.
 
       async addGasto({ descripcion, monto, categoria }) {
         if (USE_LOCAL_STORAGE) {
@@ -436,6 +443,8 @@
         return data[0];
       },
 
+// Elimina un gasto según su identificador.
+
       async deleteGasto(id) {
         if (USE_LOCAL_STORAGE) {
           let gastos = getLocalGastos();
@@ -461,6 +470,8 @@
     };
 
     // ─── Referencias al DOM ───
+    // Referencias a los elementos HTML para poder manipularlos desde JavaScript.
+
     const btnAgregar      = document.getElementById('btn-agregar');
     const inputDesc       = document.getElementById('descripcion');
     const inputMonto      = document.getElementById('monto');
@@ -475,20 +486,22 @@
     // ─── Utilidades ───
     let toastTimer;
 
+// Muestra un mensaje de error temporal en la pantalla.
+
     function showToast(msg) {
       toast.textContent = '⚠️ ' + msg;
       toast.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
     }
-
+// Formatea los montos con el formato de moneda argentino.
     function formatMonto(n) {
       return '$ ' + Number(n).toLocaleString('es-AR', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
     }
-
+// Convierte la fecha almacenada en un formato legible para el usuario.
     function formatFecha(iso) {
       const d = new Date(iso);
       return d.toLocaleDateString('es-AR', {
@@ -502,6 +515,10 @@
     };
 
     // ─── Renderizar lista de gastos ───
+
+    // Dibuja la lista de gastos en pantalla y actualiza
+// el total gastado y la cantidad de registros.
+
     function renderGastos(gastos) {
       loadingState.classList.add('hidden');
 
@@ -574,6 +591,7 @@
     }
 
     // ─── Escape HTML para prevenir XSS ───
+    // Evita que un texto ingresado por el usuario pueda inyectar código HTML.
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;')
@@ -583,6 +601,7 @@
     }
 
     // ─── Cargar gastos desde Supabase ───
+    // Carga los gastos al iniciar la aplicación y actualiza la interfaz.
     async function loadGastos() {
       loadingState.classList.remove('hidden');
       emptyState.classList.add('hidden');
@@ -599,6 +618,7 @@
     }
 
     // ─── Agregar gasto ───
+    // Valida los datos del formulario y registra un nuevo gasto.
     async function handleAgregar() {
       const descripcion = inputDesc.value.trim();
       const monto       = parseFloat(inputMonto.value);
@@ -646,6 +666,7 @@
     }
 
     // ─── Eliminar gasto ───
+    // Elimina un gasto y vuelve a cargar la lista actualizada.
     async function handleDelete(id, itemEl) {
       // Animación de salida
       itemEl.style.transition = 'opacity .2s, transform .2s';
@@ -664,6 +685,8 @@
     }
 
     // ─── Eventos ───
+    // Eventos de la interfaz.
+// Se ejecutan cuando el usuario agrega un gasto o presiona Enter.
     btnAgregar.addEventListener('click', handleAgregar);
 
     // Enter en cualquier campo dispara el guardado
@@ -674,6 +697,7 @@
     });
 
     // ─── Cargar gastos al iniciar la página ───
+    // Al abrir la página se cargan automáticamente los gastos existentes.
     loadGastos();
   </script>
 
